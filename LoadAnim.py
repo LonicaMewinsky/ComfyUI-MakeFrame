@@ -4,6 +4,8 @@ import torchvision.transforms as transforms
 import numpy as np
 import os
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class BreakFrames:
     def __init__(self):
         pass
@@ -51,13 +53,13 @@ class BreakFrames:
             ret, frame = video_capture.read()
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                tensors.append(transformer(frame).unsqueeze(0))
+                tensors.append(transformer(frame).to(device).unsqueeze(0))
                 frame_count += 1
             else:
                 break
         video_capture.release()
         if num_keyframes > 0:
-            N = np.clip(num_keyframes, 2, len(tensors)-1) # Save a spot for first frame
+            N = np.clip(num_keyframes, 2, len(tensors)-1)
             differences = [torch.norm(tensors[i+1] - tensors[i], p=2) for i in range(len(tensors)-1)]
             _, top_indices = torch.topk(torch.tensor(differences), k=N, largest=True)
             keyframe_indices = sorted([index.item() + 1 for index in top_indices])
