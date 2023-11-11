@@ -26,8 +26,8 @@ class BreakFrames:
                 }),
             },
         }
-    RETURN_TYPES = ("IMAGE", "IMAGE")
-    RETURN_NAMES = ("Frames","Keyframes")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
+    RETURN_NAMES = ("Frames","Keyframes", "Keyframe indices")
 
     FUNCTION = "breakframes"
     CATEGORY = "Frames"
@@ -59,7 +59,7 @@ class BreakFrames:
                 break
         video_capture.release()
         if num_keyframes > 0:
-            N = np.clip(num_keyframes, 2, len(tensors)-1)
+            N = np.clip(num_keyframes, 2, len(tensors)-1) # Save a spot for first frame
             differences = [torch.norm(tensors[i+1] - tensors[i], p=2) for i in range(len(tensors)-1)]
             _, top_indices = torch.topk(torch.tensor(differences), k=N, largest=True)
             keyframe_indices = sorted([index.item() + 1 for index in top_indices])
@@ -69,7 +69,8 @@ class BreakFrames:
         else:
             cat_keyframe_tensors = None
         cat_frame_tensors = torch.cat(tensors, dim = 0).permute(0, 2, 3, 1)
-        return (cat_frame_tensors, cat_keyframe_tensors)
+        print(str(keyframe_indices))
+        return (cat_frame_tensors, cat_keyframe_tensors, str(keyframe_indices))
 
 NODE_CLASS_MAPPINGS = {
     "BreakFrames": BreakFrames
