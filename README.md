@@ -1,4 +1,7 @@
 # ComfyBreakAnim
-Custom node for breaking an animation into frames (and keyframes)
+Custom nodes for:
+* Breaking animations into frames
+* Extracting keyframes
+* Making/breaking image grids
 
-![image](https://github.com/LonicaMewinsky/ComfyBreakAnim/assets/93007558/233b85f3-5405-49a6-acd9-51341245cfa9)
+![image](https://github.com/LonicaMewinsky/ComfyUI-MakeFrame/assets/93007558/70e7c3ea-23a4-4b75-8573-4e381d7060e2)
