@@ -6,7 +6,7 @@ Break any animation file that OpenCV will process into individual frames.
 ![image](https://github.com/LonicaMewinsky/ComfyUI-MakeFrame/assets/93007558/2d8e9b0b-cbad-4018-bd02-2d139071738b)
 
 ## GetKeyFrames:
-Process scene detection on all given frames, rank-orders, returns top N results. Always includes first frame. Also returns labeled images.
+Process scene detection on all given frames, rank-orders, returns top N results. Always includes first and last frames. Also returns labeled images.
 
 ![image](https://github.com/LonicaMewinsky/ComfyUI-MakeFrame/assets/93007558/ce9de415-d9c4-43ac-94ba-7b8af52e5927)
 
