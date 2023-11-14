@@ -1,6 +1,5 @@
 import cv2
 import torch
-import torchvision.transforms as transforms
 import numpy as np
 import os
 from PIL import Image
@@ -42,19 +41,16 @@ class BreakFrames:
             print(f"Error: Could not open video file {file_input}.")
             return None
         # Read each frame from anim
-        frame_count = 0
-        transformer = transforms.ToTensor()
         tensors = []
         while True:
             ret, frame = video_capture.read()
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                tensors.append(transformer(frame).to(device).unsqueeze(0))
-                frame_count += 1
+                tensors.append(mfu.pil_to_tens(frame).to(device))
             else:
                 break
         video_capture.release()
-        cat_frame_tensors = torch.cat(tensors, dim = 0).permute(0, 2, 3, 1)
+        cat_frame_tensors = torch.cat(tensors, dim = 0).to(device)
 
         return (cat_frame_tensors,)
 
@@ -75,8 +71,8 @@ class GetKeyFrames:
                 }),
             },
         }
-    RETURN_TYPES = ("IMAGE", "INT",)
-    RETURN_NAMES = ("Keyframes", "Keyframe indices",)
+    RETURN_TYPES = ("IMAGE", "IMAGE")
+    RETURN_NAMES = ("Keyframes", "Labeled Keyframes")
 
     FUNCTION = "getkeyframes"
     CATEGORY = "Frames"
@@ -89,8 +85,14 @@ class GetKeyFrames:
         keyframe_indices = sorted([index.item() + 1 for index in top_indices])
         keyframe_indices.insert(0, 0)
         cat_keyframe_tensors = [frames[i].to(device).unsqueeze(0) for i in keyframe_indices]
-        cat_keyframe_tensors = torch.cat(cat_keyframe_tensors, dim = 0)
-        return (cat_keyframe_tensors, keyframe_indices)
+        cat_keyframe_tensors = torch.cat(cat_keyframe_tensors, dim = 0).to(device)
+
+        pils = mfu.cat_to_pils(cat_keyframe_tensors)
+        keyframes_labeled = [mfu.ImgLabeler(frame, str(idx), size=72, color="#ffffff") for frame, idx in zip(pils, keyframe_indices)]
+        keyframe_labeled_tensors = [mfu.pil_to_tens(keyframe) for keyframe in keyframes_labeled]
+        cat_keyframe_tensors_labeled = torch.cat(keyframe_labeled_tensors, dim = 0).to(device)
+        
+        return (cat_keyframe_tensors, cat_keyframe_tensors_labeled)
 
 class MakeGrid:
     def __init__(self):
@@ -101,49 +103,67 @@ class MakeGrid:
         return {
             "required": {
                 "frames": ("IMAGE", ),
-                "grid_rows": ("INT", {
-                        "default": 4, 
-                        "min": 2,
-                        "max": 24,
-                        "step": 1
-                }),
-                "grid_cols": ("INT", {
-                        "default": 4, 
-                        "min": 2,
-                        "max": 24,
-                        "step": 1
-                }),
                 "max_width": ("INT", {
-                        "default": 1024, 
+                        "default": 2048, 
                         "min": 64,
-                        "max": 4096,
+                        "max": 8000,
                         "step": 8
                 }),
                 "max_height": ("INT", {
-                        "default": 1024, 
+                        "default": 2048, 
                         "min": 64,
-                        "max": 4096,
+                        "max": 8000,
                         "step": 8
                 }),
             },
         }
     
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = ("Grid",)
+    RETURN_TYPES = ("IMAGE", "INT", "INT")
+    RETURN_NAMES = ("Grid", "Rows", "Columns")
 
     FUNCTION = "makegrid"
     CATEGORY = "Frames"
 
-    def makegrid(self, frames, grid_rows, grid_cols, max_width, max_height):
-        # Pad the list with extras; black space frustrates generation
+    def makegrid(self, frames, max_width, max_height):
 
-        # Size needs to be divisible by 8 AND the grid dimension
-        if not grid_rows == 8: max_height = mfu.closest_lcm(max_height, 8, grid_rows)
-        if not grid_cols == 8: max_width = mfu.closest_lcm(max_width, 8, grid_cols)
-        # Build base grid
         pils = mfu.cat_to_pils(frames)
         pils = mfu.normalize_size(pils) #normalize sizes to /8
-        grid = mfu.constrain_image(mfu.MakeGrid(pils, grid_rows, grid_cols), max_width, max_height)
-        grid = mfu.pil_to_cat(grid)
+        rows, cols = mfu.get_grid_aspect(len(pils), pils[0].width, pils[0].height)
+        if len(pils) < rows*cols:
+            pils = mfu.padlist(pils, rows*cols) #pad list with repeats (black space bad)
+        if not rows == 8: max_height = mfu.closest_lcm(max_height, 8, rows)
+        if not cols == 8: max_width = mfu.closest_lcm(max_width, 8, cols)
 
-        return (grid,)
+        grid = mfu.constrain_image(mfu.MakeGrid(pils, rows, cols), max_width, max_height)
+        grid = mfu.pil_to_tens(grid).to(device)
+        return (grid, rows, cols)
+
+class BreakGrid:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "grid": ("IMAGE",),
+                "rows": ("INT",{}),
+                "columns": ("INT",{}),
+            },
+        }
+    
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("Frames",)
+
+    FUNCTION = "breakgrid"
+    CATEGORY = "Frames"
+
+    def breakgrid(self, grid, rows, columns):
+        pilgrids = mfu.cat_to_pils(grid)
+        frames =[]
+        for pilgrid in pilgrids:
+            frames.extend(mfu.BreakGrid(pilgrid, rows, columns))
+        frame_tensors = [mfu.pil_to_tens(frame) for frame in frames]
+        cat_frame_tensors = torch.cat(frame_tensors, dim = 0).unsqueeze(0)
+
+        return (cat_frame_tensors)

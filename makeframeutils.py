@@ -36,7 +36,6 @@ def normalize_size(images):
         if images[i].size != refimage.size:
             images[i] = images[i].resize(refimage.size, Image.Resampling.LANCZOS)
         return_images.append(images[i])
-        np.lcm(6, 8)
     return return_images
 
 def constrain_image(image, max_width, max_height):
@@ -187,8 +186,44 @@ def cat_to_pils(tensor):
     pils = [to_pil(tensor[i]) for i in range(tensor.shape[0])]
     return pils
 
-def pil_to_cat(pimg):
+def pil_to_tens(pimg):
     to_tensor = ToTensor()
     tensor = to_tensor(pimg).unsqueeze(0).permute(0, 2, 3, 1)
-    print(tensor.shape)
     return tensor
+
+def get_grid_aspect(num_images: int, image_width: int, image_height: int) -> (int, int):
+
+    if num_images == 0:
+        return 0, 0
+
+    min_diff = float('inf')
+    best_layout = (1, num_images)
+
+    if image_width > image_height:
+        for cols in range(1, num_images + 1):
+            rows = -(-num_images // cols)
+            grid_width = cols * image_width
+            grid_height = rows * image_height
+            diff = abs(grid_width - grid_height)
+
+            if diff < min_diff:
+                min_diff = diff
+                best_layout = (rows, cols)
+
+            if cols > num_images / cols:
+                break
+    else:
+        for rows in range(1, num_images + 1):
+            cols = -(-num_images // rows)
+            grid_width = cols * image_width
+            grid_height = rows * image_height
+            diff = abs(grid_height - grid_width)
+
+            if diff < min_diff:
+                min_diff = diff
+                best_layout = (rows, cols)
+
+            if rows > num_images / rows:
+                break
+
+    return best_layout
