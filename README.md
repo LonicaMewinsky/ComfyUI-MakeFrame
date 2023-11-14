@@ -15,7 +15,7 @@ Plots given images on a grid. Calculates number of rows and columns for most eve
 * For concurrent frame generation. Creates potentially massive image.
 * Images are resized to be evenly-divisible by rows, columns, and 8 (to prevent "resize wobble").
 * Empty cells are padded with repeats of last image. Black space frustrates generation.
-* 
+
 ![image](https://github.com/LonicaMewinsky/ComfyUI-MakeFrame/assets/93007558/ac61e777-b5d9-48d5-b20f-57ff1c320d7c)
 
 ## BreakGrid:
