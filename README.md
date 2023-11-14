@@ -1,4 +1,4 @@
-# ComfyBreakAnim
+# MakeFrame
 
 ## BreakFrames:
 Break any animation file that OpenCV will process into individual frames.
