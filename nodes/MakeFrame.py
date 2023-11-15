@@ -190,7 +190,7 @@ class RandomImageFromDir:
     RETURN_NAMES = ("Random Image",)
 
     FUNCTION = "getrandom"
-    CATEGORY = "Frames"
+    CATEGORY = "_for_testing"
 
     def IS_CHANGED(cls, dir):
         return random.random()
