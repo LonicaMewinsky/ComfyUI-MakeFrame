@@ -2,8 +2,10 @@ import cv2
 import torch
 import numpy as np
 import os
+import random
 from PIL import Image
 from .. import makeframeutils as mfu
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -168,3 +170,38 @@ class BreakGrid:
         cat_frame_tensors = torch.cat(frame_tensors, dim = 0).unsqueeze(0)
 
         return (cat_frame_tensors)
+
+class RandomImageFromDir:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "dir": ("STRING", {
+                    "multiline": False,
+                    "default": "C:/Poses"
+                }),
+            },
+        }
+    
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("Random Image",)
+
+    FUNCTION = "getrandom"
+    CATEGORY = "Frames"
+
+    def IS_CHANGED(cls, dir):
+        return random.random()
+    
+    def getrandom(self, dir):
+        files = os.listdir(dir)
+        image_files = [file for file in files if file.endswith(('.png', '.jpg', '.jpeg'))]
+
+        random_image = random.choice(image_files)
+
+        img = Image.open(os.path.join(dir, random_image))
+        tensor = mfu.pil_to_tens(img).unsqueeze(0)
+        random_image = None
+        return tensor
