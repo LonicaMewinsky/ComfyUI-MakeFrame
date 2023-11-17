@@ -71,6 +71,16 @@ class GetKeyFrames:
                         "max": 4096,
                         "step": 1
                 }),
+                "include_first_frame": ("BOOLEAN", {
+                        "default": True,
+                        "label_on": "True",
+                        "label_off": "False"
+                }),
+                "include_last_frame": ("BOOLEAN", {
+                        "default": True,
+                        "label_on": "True",
+                        "label_off": "False"
+                }),
             },
         }
     RETURN_TYPES = ("IMAGE", "IMAGE")
@@ -79,14 +89,14 @@ class GetKeyFrames:
     FUNCTION = "getkeyframes"
     CATEGORY = "Frames"
 
-    def getkeyframes(self, frames, num_keyframes):
+    def getkeyframes(self, frames, num_keyframes, include_first_frame, include_last_frame):
         N = np.clip(num_keyframes, 2, len(frames)-2)
         frames = frames
         differences = [torch.norm(frames[i+1] - frames[i], p=2) for i in range(len(frames)-1)]
         _, top_indices = torch.topk(torch.tensor(differences), k=N, largest=True)
         keyframe_indices = sorted([index.item() + 1 for index in top_indices])
-        keyframe_indices.insert(0, 0)
-        keyframe_indices.append(len(frames)-1)
+        if include_first_frame: keyframe_indices.insert(0, 0)
+        if include_last_frame: keyframe_indices.append(len(frames)-1)
         cat_keyframe_tensors = [frames[i].to(device).unsqueeze(0) for i in keyframe_indices]
         cat_keyframe_tensors = torch.cat(cat_keyframe_tensors, dim = 0).to(device)
 
