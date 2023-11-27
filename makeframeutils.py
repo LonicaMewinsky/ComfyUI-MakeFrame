@@ -101,11 +101,10 @@ def ImgLabeler(img, text, size=72, color=(255,255,255)):
     draw = ImageDraw.Draw(img)
 
     # Get text size
-    text_size = draw.textsize(text, font=font)
-
+    text_size = draw.textlength(text, font=font)
     # Calculate x, y coordinates of the text
-    x = (img.width - text_size[0]) / 2
-    y = (img.height - text_size[1]) / 2
+    x = (img.width - text_size) / 2
+    y = (img.height - text_size) / 2
 
     # Position for the text, centered
     text_position = (x, y)

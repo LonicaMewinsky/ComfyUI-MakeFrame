@@ -6,7 +6,6 @@ import random
 from PIL import Image
 from .. import makeframeutils as mfu
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class BreakFrames:
